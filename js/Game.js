@@ -11,14 +11,11 @@ export default class Game {
         this.ctx = canvas.getContext('2d');
         this.input = new InputHandler();
         
-        // Размеры игрового мира
         this.worldWidth = 3200;
         this.worldHeight = canvas.height || 500;
         
-        // Камера
         this.camera = { x: 0, y: 0 };
         
-        // Состояние игры
         this.isRunning = false;
         this.isPaused = false;
         this.score = 0;
@@ -27,14 +24,12 @@ export default class Game {
         this.collectedBeans = 0;
         this.level = 1;
 
-        // Игровые объекты
         this.player = null;
         this.platforms = [];
         this.collectibles = [];
         this.enemies = [];
         this.particles = [];
         
-        // Цветовая схема уровня
         this.colors = {
             bg: '#0a0a1a',
             platform: '#2a1a3a',
@@ -80,10 +75,8 @@ export default class Game {
         this.collectibles = [];
         this.enemies = [];
         
-        // Генерируем платформы
         this.generatePlatforms();
         
-        // Создаём игрока на первой платформе
         const startPlatform = this.platforms[0];
         this.player = new Player(
             startPlatform.x + startPlatform.width / 2,
@@ -91,7 +84,6 @@ export default class Game {
             this.input
         );
         
-        // Генерируем зёрна и врагов
         this.generateCollectibles();
         this.generateEnemies();
         
@@ -101,42 +93,37 @@ export default class Game {
 
     generatePlatforms() {
         const h = this.worldHeight;
-        const w = this.worldWidth;
+        const groundY = h - 60; // «Земля» — 60px от низа
         
-        // === ВАЖНОЕ ИСПРАВЛЕНИЕ: платформы в нижней половине экрана ===
+        // ===== СТАРТОВАЯ ПЛАТФОРМА (внизу) =====
+        this.platforms.push(new Platform(30, groundY, 200, 20, this.colors));
         
-        // Стартовая платформа — внизу по центру левой части
-        this.platforms.push(new Platform(50, h - 80, 180, 20, this.colors));
+        // ===== ОСНОВНЫЕ ПЛАТФОРМЫ =====
+        // Делаем волну: плавно поднимаемся и опускаемся, но НИКОГДА не выше середины экрана
+        const platformCount = 20;
+        let lastX = 200;
         
-        let lastX = 230;
-        let lastY = h - 80;
-        
-        // Генерируем платформы лесенкой, с небольшими перепадами высоты
-        for (let i = 0; i < 22; i++) {
-            const width = 80 + Math.random() * 140;
-            const gapX = 90 + Math.random() * 150;
+        for (let i = 0; i < platformCount; i++) {
+            const width = 90 + Math.random() * 120;
+            const gapX = 100 + Math.random() * 130;
             
-            // Перепад высоты: от -60 до +40 пикселей (небольшие шаги)
-            const gapY = (Math.random() - 0.4) * 80;
+            // Высота: волна от земли до середины экрана
+            // Используем синусоиду для плавных подъёмов и спусков
+            const wavePosition = Math.sin(i * 0.4) * 0.5 + 0.5; // 0..1
+            const maxHeight = groundY - 80;  // самая высокая точка (80px от земли)
+            const minHeight = groundY;        // самая низкая (земля)
             
-            let newX = lastX + gapX;
-            let newY = lastY + gapY;
+            const platformY = minHeight - wavePosition * (minHeight - maxHeight);
             
-            // === ЖЁСТКИЕ ОГРАНИЧЕНИЯ: платформы только в нижних 65% экрана ===
-            const minY = h * 0.35; // верхняя граница — 35% от высоты
-            const maxY = h - 50;    // нижняя граница
+            const x = lastX + gapX;
+            const y = Math.max(80, Math.min(groundY, platformY)); // СТРОГО: не выше 80px от верха
             
-            if (newY < minY) newY = minY + Math.random() * 20;
-            if (newY > maxY) newY = maxY - Math.random() * 20;
-            
-            this.platforms.push(new Platform(newX, newY, width, 18, this.colors));
-            
-            lastX = newX + width;
-            lastY = newY;
+            this.platforms.push(new Platform(x, y, width, 18, this.colors));
+            lastX = x + width;
         }
         
-        // Финальная платформа — тоже внизу
-        this.platforms.push(new Platform(lastX + 100, h - 80, 200, 20, this.colors));
+        // ===== ФИНАЛЬНАЯ ПЛАТФОРМА (внизу) =====
+        this.platforms.push(new Platform(lastX + 120, groundY, 200, 20, this.colors));
     }
 
     generateCollectibles() {
@@ -149,7 +136,7 @@ export default class Game {
                 this.collectibles.push(new Collectible(x, y));
             }
             
-            if (Math.random() < 0.25) {
+            if (Math.random() < 0.2) {
                 const x2 = platform.x + platform.width / 3 + Math.random() * platform.width * 0.4;
                 const y2 = platform.y - 25;
                 this.collectibles.push(new Collectible(x2, y2));
@@ -160,8 +147,7 @@ export default class Game {
     generateEnemies() {
         this.platforms.forEach((platform, index) => {
             if (index < 2 || index === this.platforms.length - 1) return;
-            
-            if (Math.random() < 0.25) {
+            if (Math.random() < 0.2) {
                 const x = platform.x + platform.width / 2;
                 const y = platform.y - 40;
                 this.enemies.push(new Enemy(x, y, platform, this.colors));
@@ -217,7 +203,6 @@ export default class Game {
         const cam = this.camera;
         
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
         ctx.fillStyle = this.colors.bg;
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
@@ -227,28 +212,21 @@ export default class Game {
         ctx.translate(-cam.x, 0);
         
         this.platforms.forEach(platform => {
-            if (this.isVisible(platform)) {
-                platform.draw(ctx);
-            }
+            if (this.isVisible(platform)) platform.draw(ctx);
         });
         
         this.collectibles.forEach(bean => {
-            if (!bean.collected && this.isVisible(bean)) {
-                bean.draw(ctx);
-            }
+            if (!bean.collected && this.isVisible(bean)) bean.draw(ctx);
         });
         
         this.enemies.forEach(enemy => {
-            if (this.isVisible(enemy)) {
-                enemy.draw(ctx);
-            }
+            if (this.isVisible(enemy)) enemy.draw(ctx);
         });
         
         this.particles.forEach(p => p.draw(ctx));
         this.player.draw(ctx);
         
         ctx.restore();
-        
         this.drawStars(cam.x * 0.6);
     }
 
@@ -319,7 +297,6 @@ export default class Game {
 
     gameLoop() {
         if (!this.isRunning || this.isPaused) return;
-        
         this.update();
         this.render();
         requestAnimationFrame(() => this.gameLoop());
