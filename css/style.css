@@ -1,0 +1,274 @@
+:root {
+    --bg: #0a0a1a;
+    --primary: #ff6b6b;
+    --secondary: #ffd93d;
+    --accent: #6bcb77;
+    --neon-blue: #4fc3f7;
+    --neon-pink: #f06292;
+    --text: #ffffff;
+    --overlay-bg: rgba(10, 10, 26, 0.92);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg);
+    font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* ========== ОБЁРТКА ИГРЫ ========== */
+.game-wrapper {
+    position: relative;
+    width: 800px;
+    height: 500px;
+    border: 2px solid var(--neon-blue);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 
+        0 0 20px rgba(79, 195, 247, 0.3),
+        0 0 60px rgba(79, 195, 247, 0.1),
+        inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+}
+
+/* ========== ЗВЁЗДНЫЙ ФОН (CSS-анимация) ========== */
+.stars {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    background-image: 
+        radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.8), transparent),
+        radial-gradient(1px 1px at 25% 45%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1.5px 1.5px at 40% 15%, rgba(255,255,255,0.9), transparent),
+        radial-gradient(1px 1px at 55% 60%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1.5px 1.5px at 70% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 85% 50%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 15% 75%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1.5px 1.5px at 60% 80%, rgba(255,255,255,0.8), transparent),
+        radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 35% 90%, rgba(255,255,255,0.7), transparent);
+    animation: twinkle 3s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+    0% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+/* ========== ИГРОВОЙ UI ========== */
+.game-ui {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.score-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--secondary);
+}
+
+.score-icon {
+    font-size: 1.2rem;
+}
+
+#score {
+    color: var(--secondary);
+    font-size: 1.3rem;
+    font-weight: 700;
+    min-width: 30px;
+    text-align: center;
+}
+
+.lives-display {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--primary);
+}
+
+#lives {
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+}
+
+/* ========== ОВЕРЛЕИ (ЭКРАНЫ) ========== */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--overlay-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    backdrop-filter: blur(4px);
+    transition: opacity 0.4s ease;
+}
+
+.overlay.hidden {
+    display: none;
+}
+
+.overlay-content {
+    text-align: center;
+    color: var(--text);
+    padding: 2rem;
+}
+
+.game-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--secondary), var(--neon-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.game-subtitle {
+    color: #aaa;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+.controls-info {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: #ccc;
+    line-height: 1.8;
+}
+
+.controls-info p:first-child {
+    color: var(--neon-blue);
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+.btn-start, .btn-restart {
+    display: inline-block;
+    padding: 0.8rem 2.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-start {
+    background: linear-gradient(135deg, var(--secondary), #ff8c00);
+    color: #1a1a1a;
+    box-shadow: 0 4px 20px rgba(255, 217, 61, 0.4);
+}
+
+.btn-start:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(255, 217, 61, 0.6);
+}
+
+.btn-restart {
+    background: transparent;
+    color: var(--text);
+    border: 2px solid var(--neon-blue);
+    box-shadow: 0 4px 15px rgba(79, 195, 247, 0.2);
+}
+
+.btn-restart:hover {
+    background: var(--neon-blue);
+    color: #1a1a1a;
+}
+
+.overlay h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--text);
+}
+
+.final-score {
+    font-size: 1.3rem;
+    color: var(--secondary);
+    margin-bottom: 1.5rem;
+}
+
+.win-message {
+    color: var(--accent);
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    font-style: italic;
+}
+
+/* ========== ФУТЕР ========== */
+.game-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    color: #666;
+    font-size: 0.75rem;
+    line-height: 1.8;
+    max-width: 800px;
+}
+
+/* ========== АДАПТИВ ========== */
+@media (max-width: 840px) {
+    .game-wrapper {
+        width: 100vw;
+        height: 60vw;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+    
+    .game-title {
+        font-size: 1.6rem;
+    }
+    
+    .controls-info {
+        font-size: 0.75rem;
+        padding: 0.6rem 1rem;
+    }
+    
+    .btn-start, .btn-restart {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.9rem;
+    }
+}

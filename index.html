@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Космический бариста | Coffee Platformer</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="game-wrapper">
+        <!-- Задний фон со звёздами (CSS) -->
+        <div class="stars"></div>
+        
+        <!-- Игровой Canvas -->
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- UI поверх Canvas -->
+        <div class="game-ui">
+            <div class="score-display">
+                <span class="score-icon">☕</span>
+                <span id="score">0</span>
+            </div>
+            <div class="lives-display">
+                <span id="lives">❤️❤️❤️</span>
+            </div>
+        </div>
+
+        <!-- Стартовый экран -->
+        <div class="overlay" id="startScreen">
+            <div class="overlay-content">
+                <h1 class="game-title">☕ Космический бариста</h1>
+                <p class="game-subtitle">Собери все кофейные зёрна в галактике!</p>
+                <div class="controls-info">
+                    <p>🎮 Управление:</p>
+                    <p>← → или A/D — движение</p>
+                    <p>Пробел или W — прыжок</p>
+                </div>
+                <button class="btn-start" id="startBtn">Начать игру</button>
+            </div>
+        </div>
+
+        <!-- Экран паузы -->
+        <div class="overlay hidden" id="pauseScreen">
+            <div class="overlay-content">
+                <h2>⏸️ Пауза</h2>
+                <button class="btn-start" id="resumeBtn">Продолжить</button>
+                <button class="btn-restart" id="restartFromPauseBtn">Заново</button>
+            </div>
+        </div>
+
+        <!-- Экран завершения игры -->
+        <div class="overlay hidden" id="gameOverScreen">
+            <div class="overlay-content">
+                <h2 id="gameOverTitle">💔 Кофе остыл...</h2>
+                <p class="final-score">Собрано зёрен: <span id="finalScore">0</span> ☕</p>
+                <button class="btn-start" id="restartBtn">Попробовать снова</button>
+            </div>
+        </div>
+
+        <!-- Экран победы -->
+        <div class="overlay hidden" id="winScreen">
+            <div class="overlay-content">
+                <h2>🏆 Галактический бариста!</h2>
+                <p class="final-score">Все зёрна собраны: <span id="winScore">0</span> ☕</p>
+                <p class="win-message">Кофе спасён! Ты — легенда!</p>
+                <button class="btn-start" id="playAgainBtn">Играть ещё</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="game-footer">
+        <p>
+            <strong>Использованная нейросеть:</strong> DeepSeek | 
+            <strong>Время выполнения:</strong> ~3 часа
+        </p>
+        <p>
+            <strong>JavaScript-функционал:</strong> Игровой цикл на Canvas API, физика персонажа, система коллизий, 
+            генерация уровней, сбор предметов, враги с ИИ, система частиц, сохранение прогресса.
+        </p>
+    </footer>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
