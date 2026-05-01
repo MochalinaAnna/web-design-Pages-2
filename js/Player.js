@@ -6,10 +6,10 @@ export default class Player {
         this.height = 50;
         this.vx = 0;
         this.vy = 0;
-        this.speed = 5;
-        this.jumpForce = -12;
-        this.gravity = 0.65;
-        this.friction = 0.82;
+        this.speed = 3.5;        // Было 5 → стало 3.5 (медленнее)
+        this.jumpForce = -10;    // Было -12 → стало -10 (ниже прыжок)
+        this.gravity = 0.5;      // Было 0.65 → стало 0.5 (мягче падение)
+        this.friction = 0.85;    // Было 0.82 → стало 0.85 (плавнее остановка)
         this.isOnGround = false;
         this.input = input;
         this.invulnerable = false;
@@ -39,7 +39,7 @@ export default class Player {
 
         // Гравитация
         this.vy += this.gravity;
-        if (this.vy > 15) this.vy = 15;
+        if (this.vy > 12) this.vy = 12; // Было 15 → 12
 
         // Перемещение по X
         this.x += this.vx;
@@ -65,11 +65,9 @@ export default class Player {
         platforms.forEach(platform => {
             if (this.rectCollision(platform)) {
                 if (this.vy > 0) {
-                    // Приземление сверху
                     this.y = platform.y - this.height;
                     this.isOnGround = true;
                 } else if (this.vy < 0) {
-                    // Удар головой
                     this.y = platform.y + platform.height;
                 }
                 this.vy = 0;
@@ -103,7 +101,6 @@ export default class Player {
     }
 
     draw(ctx) {
-        // Мерцание при неуязвимости
         if (this.invulnerable && Math.floor(this.invulnerableTimer / 4) % 2 === 0) {
             return;
         }
@@ -111,7 +108,6 @@ export default class Player {
         ctx.save();
         ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
         
-        // Отражение
         if (!this.facingRight) {
             ctx.scale(-1, 1);
         }

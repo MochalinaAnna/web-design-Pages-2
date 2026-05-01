@@ -36,8 +36,7 @@
 ## 🚀 Запуск
 
 1. Открой `index.html` в браузере
-2. Или перейди на GitHub Pages: [ссылка]
+2. Или перейди на GitHub Pages: [\[ссылка\]](https://mochalinaanna.github.io/web-design-Pages-2/)
 
 ## 📸 Скриншоты
 
-*добавить скриншоты игры*
