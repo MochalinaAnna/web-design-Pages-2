@@ -1,304 +1,204 @@
-import Player from './Player.js';
-import Platform from './Platform.js';
-import Collectible from './Collectible.js';
-import Enemy from './Enemy.js';
-import Particle from './Particle.js';
-import InputHandler from './InputHandler.js';
-
-export default class Game {
-    constructor(canvas) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
-        this.input = new InputHandler();
+export default class Player {
+    constructor(x, y, input) {
+        this.x = x;
+        this.y = y;
+        this.width = 32;
+        this.height = 46;
+        this.vx = 0;
+        this.vy = 0;
         
-        this.worldWidth = 3200;
-        this.worldHeight = canvas.height || 500;
+        // ===== НАСТРОЙКИ ДВИЖЕНИЯ =====
+        this.speed = 3;           // спокойный бег
+        this.jumpForce = -9;      // начальная скорость прыжка
+        this.gravity = 0.4;       // МЕДЛЕННАЯ гравитация → дальний прыжок
+        this.friction = 0.88;     // плавное скольжение
         
-        this.camera = { x: 0, y: 0 };
+        this.isOnGround = false;
+        this.input = input;
+        this.invulnerable = false;
+        this.invulnerableTimer = 0;
+        this.facingRight = true;
+        this.animationTimer = 0;
         
-        this.isRunning = false;
-        this.isPaused = false;
-        this.score = 0;
-        this.lives = 3;
-        this.totalBeans = 0;
-        this.collectedBeans = 0;
-        this.level = 1;
-
-        this.player = null;
-        this.platforms = [];
-        this.collectibles = [];
-        this.enemies = [];
-        this.particles = [];
-        
-        this.colors = {
-            bg: '#0a0a1a',
-            platform: '#2a1a3a',
-            platformBorder: '#4fc3f7',
-            bean: '#ffd93d',
-            beanGlow: '#ff8c00',
-            enemy: '#f06292',
-            enemyGlow: '#ff1744',
-            player: '#ffffff',
-            playerGlow: '#4fc3f7',
-        };
+        // Чтобы нельзя было бесконечно прыгать
+        this.canJump = true;
+        this.jumpCooldown = 0;
     }
 
-    start() {
-        this.isRunning = true;
-        this.isPaused = false;
-        this.score = 0;
-        this.lives = 3;
-        this.level = 1;
-        this.collectedBeans = 0;
-        this.particles = [];
-        
-        this.updateUI();
-        this.generateLevel();
-        this.gameLoop();
-    }
-
-    pause() {
-        this.isPaused = true;
-    }
-
-    resume() {
-        this.isPaused = false;
-        this.gameLoop();
-    }
-
-    restart() {
-        this.start();
-    }
-
-    generateLevel() {
-        this.platforms = [];
-        this.collectibles = [];
-        this.enemies = [];
-        
-        this.generatePlatforms();
-        
-        const startPlatform = this.platforms[0];
-        this.player = new Player(
-            startPlatform.x + startPlatform.width / 2,
-            startPlatform.y - 50,
-            this.input
-        );
-        
-        this.generateCollectibles();
-        this.generateEnemies();
-        
-        this.totalBeans = this.collectibles.length;
-        document.getElementById('score').textContent = '0';
-    }
-
-    generatePlatforms() {
-        const h = this.worldHeight;
-        const groundY = h - 60; // «Земля» — 60px от низа
-        
-        // ===== СТАРТОВАЯ ПЛАТФОРМА (внизу) =====
-        this.platforms.push(new Platform(30, groundY, 200, 20, this.colors));
-        
-        // ===== ОСНОВНЫЕ ПЛАТФОРМЫ =====
-        // Делаем волну: плавно поднимаемся и опускаемся, но НИКОГДА не выше середины экрана
-        const platformCount = 20;
-        let lastX = 200;
-        
-        for (let i = 0; i < platformCount; i++) {
-            const width = 90 + Math.random() * 120;
-            const gapX = 100 + Math.random() * 130;
-            
-            // Высота: волна от земли до середины экрана
-            // Используем синусоиду для плавных подъёмов и спусков
-            const wavePosition = Math.sin(i * 0.4) * 0.5 + 0.5; // 0..1
-            const maxHeight = groundY - 80;  // самая высокая точка (80px от земли)
-            const minHeight = groundY;        // самая низкая (земля)
-            
-            const platformY = minHeight - wavePosition * (minHeight - maxHeight);
-            
-            const x = lastX + gapX;
-            const y = Math.max(80, Math.min(groundY, platformY)); // СТРОГО: не выше 80px от верха
-            
-            this.platforms.push(new Platform(x, y, width, 18, this.colors));
-            lastX = x + width;
-        }
-        
-        // ===== ФИНАЛЬНАЯ ПЛАТФОРМА (внизу) =====
-        this.platforms.push(new Platform(lastX + 120, groundY, 200, 20, this.colors));
-    }
-
-    generateCollectibles() {
-        this.platforms.forEach((platform, index) => {
-            if (index === 0 || index === this.platforms.length - 1) return;
-            
-            if (Math.random() < 0.7) {
-                const x = platform.x + platform.width / 2 + (Math.random() - 0.5) * platform.width * 0.5;
-                const y = platform.y - 25;
-                this.collectibles.push(new Collectible(x, y));
-            }
-            
-            if (Math.random() < 0.2) {
-                const x2 = platform.x + platform.width / 3 + Math.random() * platform.width * 0.4;
-                const y2 = platform.y - 25;
-                this.collectibles.push(new Collectible(x2, y2));
-            }
-        });
-    }
-
-    generateEnemies() {
-        this.platforms.forEach((platform, index) => {
-            if (index < 2 || index === this.platforms.length - 1) return;
-            if (Math.random() < 0.2) {
-                const x = platform.x + platform.width / 2;
-                const y = platform.y - 40;
-                this.enemies.push(new Enemy(x, y, platform, this.colors));
-            }
-        });
-    }
-
-    update() {
-        if (!this.isRunning || this.isPaused) return;
-        
-        this.player.update(this.platforms, this.worldWidth, this.worldHeight);
-        
-        this.camera.x = this.player.x - this.canvas.width / 3;
-        this.camera.x = Math.max(0, Math.min(this.camera.x, this.worldWidth - this.canvas.width));
-        
-        if (this.player.y > this.worldHeight + 100) {
-            this.loseLife();
-            return;
-        }
-        
-        this.enemies.forEach(enemy => enemy.update());
-        this.particles.forEach(p => p.update());
-        this.particles = this.particles.filter(p => p.life > 0);
-        
-        this.collectibles.forEach(bean => {
-            if (!bean.collected && this.player.collidesWith(bean)) {
-                bean.collected = true;
-                this.score += 100;
-                this.collectedBeans++;
-                this.spawnParticles(bean.x, bean.y, this.colors.bean, 8);
-                this.updateUI();
-            }
-        });
-        
-        this.enemies.forEach(enemy => {
-            if (this.player.collidesWith(enemy) && !this.player.invulnerable) {
-                this.loseLife();
-            }
-        });
-        
-        if (this.collectedBeans >= this.totalBeans) {
-            this.win();
-        }
-        
-        if (this.player.x > this.worldWidth - 100) {
-            this.score += 500;
-            this.win();
-        }
-    }
-
-    render() {
-        const ctx = this.ctx;
-        const cam = this.camera;
-        
-        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        ctx.fillStyle = this.colors.bg;
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        this.drawStars(cam.x * 0.3);
-        
-        ctx.save();
-        ctx.translate(-cam.x, 0);
-        
-        this.platforms.forEach(platform => {
-            if (this.isVisible(platform)) platform.draw(ctx);
-        });
-        
-        this.collectibles.forEach(bean => {
-            if (!bean.collected && this.isVisible(bean)) bean.draw(ctx);
-        });
-        
-        this.enemies.forEach(enemy => {
-            if (this.isVisible(enemy)) enemy.draw(ctx);
-        });
-        
-        this.particles.forEach(p => p.draw(ctx));
-        this.player.draw(ctx);
-        
-        ctx.restore();
-        this.drawStars(cam.x * 0.6);
-    }
-
-    drawStars(offset) {
-        const ctx = this.ctx;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        const seed = Math.floor(offset / 100);
-        
-        for (let i = 0; i < 20; i++) {
-            const x = ((i * 137 + seed * 53) % this.canvas.width);
-            const y = ((i * 97 + seed * 31) % this.canvas.height);
-            const size = (i % 3 === 0) ? 1.5 : 0.8;
-            ctx.fillRect(x, y, size, size);
-        }
-    }
-
-    isVisible(obj) {
-        return obj.x + obj.width > this.camera.x - 50 &&
-               obj.x < this.camera.x + this.canvas.width + 50;
-    }
-
-    spawnParticles(x, y, color, count) {
-        for (let i = 0; i < count; i++) {
-            this.particles.push(new Particle(x, y, color));
-        }
-    }
-
-    loseLife() {
-        this.lives--;
-        this.updateUI();
-        
-        if (this.lives <= 0) {
-            this.gameOver();
+    update(platforms, worldWidth, worldHeight) {
+        // Горизонтальное движение
+        if (this.input.isKeyDown('ArrowLeft') || this.input.isKeyDown('KeyA')) {
+            this.vx = -this.speed;
+            this.facingRight = false;
+        } else if (this.input.isKeyDown('ArrowRight') || this.input.isKeyDown('KeyD')) {
+            this.vx = this.speed;
+            this.facingRight = true;
         } else {
-            this.spawnParticles(this.player.x, this.player.y, this.colors.enemy, 12);
-            const safePlatform = this.platforms[0];
-            this.player.x = safePlatform.x + safePlatform.width / 2;
-            this.player.y = safePlatform.y - 50;
-            this.player.vy = 0;
-            this.player.invulnerable = true;
-            setTimeout(() => { this.player.invulnerable = false; }, 1500);
+            this.vx *= this.friction;
+            if (Math.abs(this.vx) < 0.05) this.vx = 0;
         }
-    }
 
-    gameOver() {
-        this.isRunning = false;
-        document.getElementById('finalScore').textContent = this.score;
-        document.getElementById('gameOverScreen').classList.remove('hidden');
-    }
-
-    win() {
-        this.isRunning = false;
-        document.getElementById('winScore').textContent = this.score;
-        document.getElementById('winScreen').classList.remove('hidden');
+        // Прыжок (с защитой от двойного срабатывания)
+        if (this.jumpCooldown > 0) {
+            this.jumpCooldown--;
+        }
         
-        const best = localStorage.getItem('cosmicBaristaBest') || 0;
-        if (this.score > best) {
-            localStorage.setItem('cosmicBaristaBest', this.score);
+        if ((this.input.isKeyDown('Space') || this.input.isKeyDown('KeyW')) && this.isOnGround && this.canJump && this.jumpCooldown <= 0) {
+            this.vy = this.jumpForce;
+            this.isOnGround = false;
+            this.canJump = false;
+            this.jumpCooldown = 8; // небольшая задержка перед следующим прыжком
+        }
+        
+        // Сброс canJump когда клавиша отпущена
+        if (!this.input.isKeyDown('Space') && !this.input.isKeyDown('KeyW')) {
+            this.canJump = true;
+        }
+
+        // Гравитация (медленная — прыжок получается дальним и плавным)
+        this.vy += this.gravity;
+        if (this.vy > 10) this.vy = 10; // ограничение падения
+
+        // Перемещение по X
+        this.x += this.vx;
+        this.x = Math.max(0, Math.min(this.x, worldWidth - this.width));
+
+        // Коллизии по X
+        platforms.forEach(platform => {
+            if (this.rectCollision(platform)) {
+                if (this.vx > 0) {
+                    this.x = platform.x - this.width;
+                } else if (this.vx < 0) {
+                    this.x = platform.x + platform.width;
+                }
+                this.vx = 0;
+            }
+        });
+
+        // Перемещение по Y
+        this.y += this.vy;
+        this.isOnGround = false;
+
+        // Коллизии по Y
+        platforms.forEach(platform => {
+            if (this.rectCollision(platform)) {
+                if (this.vy > 0) {
+                    // Приземление сверху
+                    this.y = platform.y - this.height;
+                    this.isOnGround = true;
+                    this.canJump = true;
+                } else if (this.vy < 0) {
+                    // Удар головой
+                    this.y = platform.y + platform.height;
+                }
+                this.vy = 0;
+            }
+        });
+
+        this.animationTimer += 0.15;
+        if (this.invulnerable) {
+            this.invulnerableTimer++;
         }
     }
 
-    updateUI() {
-        document.getElementById('score').textContent = this.score;
-        const hearts = '❤️'.repeat(Math.max(0, this.lives));
-        const broken = '🖤'.repeat(Math.max(0, 3 - this.lives));
-        document.getElementById('lives').textContent = hearts + broken;
+    rectCollision(obj) {
+        const margin = 2;
+        return (
+            this.x + margin < obj.x + obj.width &&
+            this.x + this.width - margin > obj.x &&
+            this.y < obj.y + obj.height &&
+            this.y + this.height > obj.y
+        );
     }
 
-    gameLoop() {
-        if (!this.isRunning || this.isPaused) return;
-        this.update();
-        this.render();
-        requestAnimationFrame(() => this.gameLoop());
+    collidesWith(obj) {
+        const margin = 10;
+        return (
+            this.x + margin < obj.x + obj.width &&
+            this.x + this.width - margin > obj.x &&
+            this.y + margin < obj.y + obj.height &&
+            this.y + this.height - margin > obj.y
+        );
+    }
+
+    draw(ctx) {
+        if (this.invulnerable && Math.floor(this.invulnerableTimer / 4) % 2 === 0) return;
+
+        ctx.save();
+        ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+        
+        if (!this.facingRight) ctx.scale(-1, 1);
+
+        ctx.shadowColor = '#4fc3f7';
+        ctx.shadowBlur = 10;
+
+        // Тело
+        ctx.fillStyle = '#2c1810';
+        ctx.fillRect(-14, -10, 28, 35);
+        
+        // Фартук
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-10, 5, 20, 20);
+        
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-8, -5);
+        ctx.lineTo(-4, 5);
+        ctx.moveTo(8, -5);
+        ctx.lineTo(4, 5);
+        ctx.stroke();
+
+        // Голова
+        ctx.fillStyle = '#ffccaa';
+        ctx.beginPath();
+        ctx.arc(0, -15, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Шапочка
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(-14, -28, 28, 10);
+        ctx.fillRect(-10, -32, 20, 6);
+
+        // Глаза
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(4, -17, 2.5, 0, Math.PI * 2);
+        ctx.arc(-4, -17, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(5, -18, 1, 0, Math.PI * 2);
+        ctx.arc(-3, -18, 1, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, -12, 5, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+
+        // Ноги
+        ctx.fillStyle = '#1a1a1a';
+        const legOffset = this.isOnGround ? Math.sin(this.animationTimer) * 3 : 0;
+        ctx.fillRect(-8, 25, 8, 10 + legOffset);
+        ctx.fillRect(0, 25, 8, 10 - legOffset);
+
+        // Чашка
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(18, 0, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#4fc3f7';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.beginPath();
+        ctx.arc(18, -8, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
     }
 }
