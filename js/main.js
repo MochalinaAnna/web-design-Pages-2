@@ -2,9 +2,28 @@ import Game from './Game.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');
+    const wrapper = document.querySelector('.game-wrapper');
+
+    // ===== ВАЖНО: сначала задаём размеры Canvas =====
+    function resizeCanvas() {
+        const rect = wrapper.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+    }
+
+    // Вызываем сразу
+    resizeCanvas();
+    
+    // Создаём игру ПОСЛЕ установки размеров
     const game = new Game(canvas);
 
-    // ========== КНОПКИ УПРАВЛЕНИЯ ==========
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        // Обновляем worldHeight в игре при ресайзе
+        game.worldHeight = canvas.height;
+    });
+
+    // ========== КНОПКИ ==========
     document.getElementById('startBtn').addEventListener('click', () => {
         document.getElementById('startScreen').classList.add('hidden');
         game.start();
@@ -30,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         game.restart();
     });
 
-    // ========== ПАУЗА ПО ESC ==========
+    // Пауза по ESC
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && game.isRunning) {
             if (game.isPaused) {
@@ -42,15 +61,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-
-    // ========== ПОДГОНКА РАЗМЕРА КАНВАСА ==========
-    function resizeCanvas() {
-        const wrapper = document.querySelector('.game-wrapper');
-        const rect = wrapper.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
-    }
-
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
 });

@@ -12,7 +12,8 @@ export default class Game {
         this.input = new InputHandler();
         
         this.worldWidth = 3200;
-        this.worldHeight = canvas.height || 500;
+        // БЕРЁМ ФАКТИЧЕСКУЮ ВЫСОТУ КАНВАСА
+        this.worldHeight = canvas.height;
         
         this.camera = { x: 0, y: 0 };
         
@@ -41,9 +42,14 @@ export default class Game {
             player: '#ffffff',
             playerGlow: '#4fc3f7',
         };
+
+        // Отладочный вывод
+        console.log('Canvas размер:', canvas.width, 'x', canvas.height);
+        console.log('World height:', this.worldHeight);
     }
 
     start() {
+        this.worldHeight = this.canvas.height; // Обновляем на случай ресайза
         this.isRunning = true;
         this.isPaused = false;
         this.score = 0;
@@ -93,37 +99,46 @@ export default class Game {
 
     generatePlatforms() {
         const h = this.worldHeight;
-        const groundY = h - 60; // «Земля» — 60px от низа
         
-        // ===== СТАРТОВАЯ ПЛАТФОРМА (внизу) =====
-        this.platforms.push(new Platform(30, groundY, 200, 20, this.colors));
+        // ===== ЖЁСТКО: groundY = высота canvas - 80px =====
+        const groundY = h - 80;
         
-        // ===== ОСНОВНЫЕ ПЛАТФОРМЫ =====
-        // Делаем волну: плавно поднимаемся и опускаемся, но НИКОГДА не выше середины экрана
-        const platformCount = 20;
-        let lastX = 200;
+        console.log('World height:', h);
+        console.log('Ground Y:', groundY);
         
-        for (let i = 0; i < platformCount; i++) {
+        // Стартовая платформа
+        const startPlat = new Platform(30, groundY, 180, 20, this.colors);
+        this.platforms.push(startPlat);
+        console.log('Стартовая платформа Y:', startPlat.y);
+        
+        // Генерируем 18 платформ с небольшим разбросом по высоте
+        let lastX = 210;
+        
+        for (let i = 0; i < 18; i++) {
             const width = 90 + Math.random() * 120;
             const gapX = 100 + Math.random() * 130;
             
-            // Высота: волна от земли до середины экрана
-            // Используем синусоиду для плавных подъёмов и спусков
-            const wavePosition = Math.sin(i * 0.4) * 0.5 + 0.5; // 0..1
-            const maxHeight = groundY - 80;  // самая высокая точка (80px от земли)
-            const minHeight = groundY;        // самая низкая (земля)
+            // Высота: от groundY до groundY - 100 (не выше 100px от земли)
+            const heightVariation = Math.random() * 100;
+            const y = groundY - heightVariation;
             
-            const platformY = minHeight - wavePosition * (minHeight - maxHeight);
+            const plat = new Platform(lastX + gapX, y, width, 18, this.colors);
+            this.platforms.push(plat);
             
-            const x = lastX + gapX;
-            const y = Math.max(80, Math.min(groundY, platformY)); // СТРОГО: не выше 80px от верха
+            // Каждую 4-ю платформу — делаем чуть выше для интереса
+            if (i % 4 === 0 && i > 0) {
+                plat.y = groundY - 130 - Math.random() * 40;
+            }
             
-            this.platforms.push(new Platform(x, y, width, 18, this.colors));
-            lastX = x + width;
+            lastX = plat.x + width;
         }
         
-        // ===== ФИНАЛЬНАЯ ПЛАТФОРМА (внизу) =====
-        this.platforms.push(new Platform(lastX + 120, groundY, 200, 20, this.colors));
+        // Финальная платформа
+        const finalPlat = new Platform(lastX + 130, groundY, 200, 20, this.colors);
+        this.platforms.push(finalPlat);
+        
+        // Выведем первые 5 платформ для проверки
+        console.log('Первые платформы:', this.platforms.slice(0, 5).map(p => ({ x: p.x, y: p.y })));
     }
 
     generateCollectibles() {
@@ -132,14 +147,12 @@ export default class Game {
             
             if (Math.random() < 0.7) {
                 const x = platform.x + platform.width / 2 + (Math.random() - 0.5) * platform.width * 0.5;
-                const y = platform.y - 25;
-                this.collectibles.push(new Collectible(x, y));
+                this.collectibles.push(new Collectible(x, platform.y - 25));
             }
             
             if (Math.random() < 0.2) {
                 const x2 = platform.x + platform.width / 3 + Math.random() * platform.width * 0.4;
-                const y2 = platform.y - 25;
-                this.collectibles.push(new Collectible(x2, y2));
+                this.collectibles.push(new Collectible(x2, platform.y - 25));
             }
         });
     }
@@ -148,9 +161,12 @@ export default class Game {
         this.platforms.forEach((platform, index) => {
             if (index < 2 || index === this.platforms.length - 1) return;
             if (Math.random() < 0.2) {
-                const x = platform.x + platform.width / 2;
-                const y = platform.y - 40;
-                this.enemies.push(new Enemy(x, y, platform, this.colors));
+                this.enemies.push(new Enemy(
+                    platform.x + platform.width / 2,
+                    platform.y - 40,
+                    platform,
+                    this.colors
+                ));
             }
         });
     }

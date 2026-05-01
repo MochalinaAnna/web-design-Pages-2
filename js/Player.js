@@ -8,10 +8,10 @@ export default class Player {
         this.vy = 0;
         
         // ===== НАСТРОЙКИ ДВИЖЕНИЯ =====
-        this.speed = 3;           // спокойный бег
-        this.jumpForce = -9;      // начальная скорость прыжка
-        this.gravity = 0.4;       // МЕДЛЕННАЯ гравитация → дальний прыжок
-        this.friction = 0.88;     // плавное скольжение
+        this.speed = 2;           // спокойный бег
+        this.jumpForce = -19;      // начальная скорость прыжка
+        this.gravity = 0.2;       // МЕДЛЕННАЯ гравитация → дальний прыжок
+        this.friction = 0.8;     // плавное скольжение
         
         this.isOnGround = false;
         this.input = input;
